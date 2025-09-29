@@ -1,0 +1,14 @@
+[Unit]
+Description=Hyperidle (user)
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/hyperidle --config %h/.config/hyperidle/hyperidle.conf
+Restart=on-failure
+RestartSec=2
+Environment=PATH=%h/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=default.target
+

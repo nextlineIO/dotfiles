@@ -1,0 +1,10 @@
+[Unit]
+Description=foot server
+
+[Service]
+ExecStart=foot --server
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+
