@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Toggle MissionCenter GUI task manager
+
+if pgrep -x missioncenter >/dev/null; then
+  pkill -x missioncenter
+else
+  missioncenter &
+fi

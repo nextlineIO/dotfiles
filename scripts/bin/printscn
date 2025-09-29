@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Usage: printscn screen|window|region
+# Saves to /home/eric/pictures/screenshots with a timestamped filename.
+# Copies both the file path AND the image into the clipboard.
+# Shows a single swaync toast.
+
+set -euo pipefail
+
+SAVE_DIR="/home/eric/pictures/screenshots"
+RID=9010
+SYNC_TAG="status-shot"
+TIMEOUT_MS=1500
+
+command -v hyprshot >/dev/null || { echo "hyprshot not found"; exit 1; }
+command -v notify-send >/dev/null || { echo "notify-send not found"; exit 1; }
+command -v wl-copy >/dev/null || { echo "wl-copy not found"; exit 1; }
+
+mkdir -p "$SAVE_DIR"
+
+ts=$(date +"%Y-%m-%d_%H-%M-%S")
+file="$SAVE_DIR/screenshot_${ts}.png"
+
+mode="${1:-}"
+case "$mode" in
+  screen)
+    hyprshot -m output -o "$SAVE_DIR" -f "$(basename "$file")"
+    TITLE="Screenshot (Screen)"
+    ;;
+  window)
+    hyprshot -m window -o "$SAVE_DIR" -f "$(basename "$file")"
+    TITLE="Screenshot (Window)"
+    ;;
+  region)
+    hyprshot -m region -o "$SAVE_DIR" -f "$(basename "$file")"
+    TITLE="Screenshot (Region)"
+    ;;
+  *)
+    echo "Usage: $0 {screen|window|region}"; exit 2 ;;
+esac
+
+# Copy absolute path (text) to clipboard
+wl-copy --primary "$file" || true
+wl-copy "$file" || true
+
+# Copy actual image into clipboard
+wl-copy --type image/png < "$file" || true
+
+# Toast with file name (not the whole path, less clutter)
+notify-send -r "$RID" -t "$TIMEOUT_MS" -i "image-x-generic" \
+  -h "string:x-canonical-private-synchronous:${SYNC_TAG}" \
+  "$TITLE" "$(basename "$file")"
+

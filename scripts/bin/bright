@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Usage: bright up|down
+# Smarter icon selection: low/medium/high if theme has them, else fallback.
+set -euo pipefail
+
+DEV="intel_backlight"        # panel backlight device
+STEP_DEFAULT=5               # % per tap
+STEP_DIM=2                   # finer step when very dim
+DIM_THRESHOLD=20             # below this %, use STEP_DIM
+
+RID=9003
+SYNC_TAG="status-brightness"
+TIMEOUT_MS=1200
+
+command -v brightnessctl >/dev/null || { echo "brightnessctl not found"; exit 1; }
+command -v notify-send  >/dev/null || { echo "notify-send not found"; exit 1; }
+
+# Read current brightness and decide step
+CUR=$(brightnessctl -d "$DEV" g)
+MAX=$(brightnessctl -d "$DEV" m)
+(( MAX > 0 )) || { echo "Bad backlight device '$DEV'"; exit 1; }
+
+PCT_BEFORE=$(( (CUR*100 + MAX/2) / MAX ))
+STEP=$STEP_DEFAULT
+(( PCT_BEFORE < DIM_THRESHOLD )) && STEP=$STEP_DIM
+
+# Apply change
+case "${1:-}" in
+  up)   brightnessctl -d "$DEV" set +"${STEP}%" >/dev/null ;;
+  down) brightnessctl -d "$DEV" set "${STEP}%"- >/dev/null ;;
+  *)    echo "Usage: $0 {up|down}"; exit 2 ;;
+esac
+
+# Recompute percentage
+CUR=$(brightnessctl -d "$DEV" g)
+MAX=$(brightnessctl -d "$DEV" m)
+PCT=$(( (CUR*100 + MAX/2) / MAX ))
+
+# --- Icon resolution helpers -----------------------------------------------
+# Try to find a concrete file for an icon name in common theme paths.
+# Returns a path if found, otherwise prints nothing.
+resolve_icon_path() {
+  local name="$1"
+  local gtk_ini="$HOME/.config/gtk-3.0/settings.ini"
+  local theme=""
+  if [ -f "$gtk_ini" ]; then
+    theme="$(awk -F= '/^gtk-icon-theme-name=/ {print $2; exit}' "$gtk_ini" || true)"
+  fi
+
+  # Search order: user theme (if any), Papirus-Dark, Papirus, Adwaita, hicolor
+  local themes=()
+  [ -n "$theme" ] && themes+=("$theme")
+  themes+=("Papirus-Dark" "Papirus" "Adwaita" "hicolor")
+
+  local bases=("$HOME/.local/share/icons" "/usr/share/icons")
+  local subs=("symbolic/status" "status" "status/symbolic" "symbolic")
+  local exts=("svg" "png")
+
+  for base in "${bases[@]}"; do
+    for th in "${themes[@]}"; do
+      for sub in "${subs[@]}"; do
+        for ext in "${exts[@]}"; do
+          local cand="$base/$th/$sub/${name}.${ext}"
+          if [ -f "$cand" ]; then
+            echo "$cand"
+            return 0
+          fi
+        done
+      done
+    done
+  done
+  return 1
+}
+
+# Pick a *name* based on percentage, then resolve to a file if possible,
+# with a safe fallback to display-brightness-symbolic which we know exists for you.
+pick_icon() {
+  local p="$1"
+  local name="display-brightness-symbolic"
+  if   (( p < 34 )); then name="display-brightness-low-symbolic"
+  elif (( p < 67 )); then name="display-brightness-medium-symbolic"
+  else                   name="display-brightness-high-symbolic"
+  fi
+
+  # If that variant exists, return its path; else fallback to plain symbolic name
+  local path
+  if path="$(resolve_icon_path "$name")"; then
+    echo "$path"
+  else
+    echo "display-brightness-symbolic"
+  fi
+}
+
+ICON="$(pick_icon "$PCT")"
+# ---------------------------------------------------------------------------
+
+notify-send -r "$RID" -t "$TIMEOUT_MS" -i "$ICON" \
+  -h "int:value:${PCT}" \
+  -h "string:x-canonical-private-synchronous:${SYNC_TAG}" \
+  "Brightness" "${PCT}%"
+

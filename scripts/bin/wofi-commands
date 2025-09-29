@@ -1,0 +1,359 @@
+#!/usr/bin/env bash
+# wofi command palette v14 (type-separated CSV registry files)
+# Verbs:
+#   config <key|/abs|~path>  -> open file in $EDITOR inside $TERMINAL
+#   note   <key|/abs|~path>  -> open file in $EDITOR inside $TERMINAL
+#   run    <key|command>     -> run command in $TERMINAL (login shell)
+#   bm     <key|url>         -> open bookmark in default browser
+#   edit   <key|/abs|~path>  -> alias for config/note
+#
+# Registry files (CSV, comma-separated):  key,target,description
+# Locations: 
+#   ~/.config/wofi-commands/config.csv
+#   ~/.config/wofi-commands/notes.csv
+#   ~/.config/wofi-commands/run.csv
+#   ~/.config/wofi-commands/bookmarks.csv
+
+set -euo pipefail
+
+VERSION="14"
+
+CONFIG_DIR="${HOME}/.config/wofi-commands"
+CONFIG_FILE="$CONFIG_DIR/config.csv"
+NOTES_FILE="$CONFIG_DIR/notes.csv"
+RUN_FILE="$CONFIG_DIR/run.csv"
+BOOKMARKS_FILE="$CONFIG_DIR/bookmarks.csv"
+
+# Create config directory if it doesn't exist
+[[ -d "$CONFIG_DIR" ]] || mkdir -p "$CONFIG_DIR"
+
+pick_terminal() {
+  if [[ -n "${TERMINAL:-}" ]] && command -v "$TERMINAL" >/dev/null 2>&1; then
+    printf '%s' "$TERMINAL"; return
+  fi
+  for t in footclient foot kitty alacritty wezterm gnome-terminal konsole xterm; do
+    command -v "$t" >/dev/null 2>&1 && { printf '%s' "$t"; return; }
+  done
+  command -v xdg-terminal-exec >/dev/null 2>&1 && { printf '%s' xdg-terminal-exec; return; }
+  echo "wofi-commands: No terminal found. Set \$TERMINAL or install footclient/foot/kitty/etc." >&2
+  exit 127
+}
+
+TERMINAL="$(pick_terminal)"
+EDITOR="${EDITOR:-nvim}"
+
+pick_launcher() {
+  for launcher in wofi fuzzel rofi; do
+    if command -v "$launcher" >/dev/null 2>&1; then
+      case "$launcher" in
+        wofi)   echo "wofi --dmenu -i -p ▶ --width 800 --height 400" ;;
+        fuzzel) echo "fuzzel -d -p ▶" ;;
+        rofi)   echo "rofi -dmenu -p ▶ -i" ;;
+      esac
+      return
+    fi
+  done
+  
+  echo "wofi-commands: Need wofi/fuzzel/rofi installed." >&2
+  exit 127
+}
+
+open_browser() {
+  local url="$1"
+  for opener in xdg-open gio x-www-browser sensible-browser; do
+    if command -v "$opener" >/dev/null 2>&1; then
+      nohup "$opener" "$url" >/dev/null 2>&1 & disown
+      return
+    fi
+  done
+  echo "wofi-commands: No browser opener found." >&2
+  exit 127
+}
+
+trim() { local s="$*"; s="${s#"${s%%[![:space:]]*}"}"; s="${s%"${s##*[![:space:]]}"}"; printf '%s' "$s"; }
+
+# Robust ~ expansion
+expand_home() {
+  local p="$1"
+  [[ "$p" == "~"* ]] && p="${p/#\~/$HOME}"
+  printf '%s' "$p"
+}
+
+# Enhanced path resolution with config file detection
+resolve_config_path() {
+  local key="$1"
+  local common_configs=(
+    "$HOME/.config/$key"
+    "$HOME/.config/$key/$key.conf"
+    "$HOME/.config/$key/config"
+    "$HOME/.$key"
+    "$HOME/.${key}rc"
+    "/etc/$key.conf"
+    "/etc/$key/$key.conf"
+  )
+  
+  for path in "${common_configs[@]}"; do
+    [[ -f "$path" ]] && { printf '%s' "$path"; return; }
+  done
+  
+  # Default to ~/.config/$key if nothing found
+  printf '%s' "$HOME/.config/$key"
+}
+
+run_in_terminal_cmd() {
+  local cmd="$*"
+  case "$TERMINAL" in
+    wezterm)           exec wezterm start -- bash -lc "$cmd" ;;
+    xdg-terminal-exec) exec xdg-terminal-exec bash -lc "$cmd" ;;
+    footclient|foot|kitty|alacritty|gnome-terminal|konsole|xterm)
+                       exec "$TERMINAL" -e bash -lc "$cmd" ;;
+    *)                 exec "$TERMINAL" -e bash -lc "$cmd" ;;
+  esac
+}
+
+run_in_terminal_argv() {
+  case "$TERMINAL" in
+    wezterm)           exec wezterm start -- "$@" ;;
+    xdg-terminal-exec) exec xdg-terminal-exec "$@" ;;
+    footclient|foot|kitty|alacritty|gnome-terminal|konsole|xterm)
+                       exec "$TERMINAL" -e "$@" ;;
+    *)                 exec "$TERMINAL" -e "$@" ;;
+  esac
+}
+
+launch_editor() {
+  local p; p="$(expand_home "$1")"
+  run_in_terminal_argv "$EDITOR" "$p"
+}
+
+launch_cmd() { run_in_terminal_cmd "$*"; }
+
+# Registry arrays for each type
+declare -A CFG NOTE RUN BM
+declare -A CFG_DESC NOTE_DESC RUN_DESC BM_DESC
+
+# Load a specific type file (CSV format)
+load_type_file() {
+  local file="$1"
+  local type="$2"
+  
+  [[ -r "$file" ]] || return 0
+  
+  local line k v d
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ -z "${line// /}" ]] && continue
+    [[ "${line:0:1}" == "#" ]] && continue
+    
+    # Simple CSV parsing - split on commas
+    IFS=',' read -r k v d <<<"$line"
+    
+    k="$(trim "$k")"; v="$(trim "$v")"; d="$(trim "${d:-}")"
+    [[ -z "$k" || -z "$v" ]] && continue
+    
+    # Remove quotes if present
+    k="${k//\"/}"
+    v="${v//\"/}"
+    d="${d//\"/}"
+    
+    case "$type" in
+      config) CFG["$k"]="$v"; CFG_DESC["$k"]="$d" ;;
+      note)   NOTE["$k"]="$v"; NOTE_DESC["$k"]="$d" ;;
+      run)    RUN["$k"]="$v"; RUN_DESC["$k"]="$d" ;;
+      bm)     BM["$k"]="$v"; BM_DESC["$k"]="$d" ;;
+    esac
+  done < "$file"
+}
+
+load_all_registries() {
+  load_type_file "$CONFIG_FILE" "config"
+  load_type_file "$NOTES_FILE" "note"
+  load_type_file "$RUN_FILE" "run"
+  load_type_file "$BOOKMARKS_FILE" "bm"
+}
+
+# Menu with descriptions only (cleaner display, organized by type)
+menu() {
+  {
+    # CONFIG section
+    if [[ ${#CFG[@]} -gt 0 ]]; then
+      for k in $(printf '%s\n' "${!CFG[@]}" | sort); do
+        local desc="${CFG_DESC[$k]:-${CFG[$k]}}"
+        printf 'config %s — %s\n' "$k" "$desc"
+      done
+      echo ""
+    fi
+    
+    # NOTES section  
+    if [[ ${#NOTE[@]} -gt 0 ]]; then
+      for k in $(printf '%s\n' "${!NOTE[@]}" | sort); do
+        local desc="${NOTE_DESC[$k]:-${NOTE[$k]}}"
+        printf 'note   %s — %s\n' "$k" "$desc"
+      done
+      echo ""
+    fi
+    
+    # RUN section
+    if [[ ${#RUN[@]} -gt 0 ]]; then
+      for k in $(printf '%s\n' "${!RUN[@]}" | sort); do
+        local desc="${RUN_DESC[$k]:-${RUN[$k]}}"
+        printf 'run    %s — %s\n' "$k" "$desc"
+      done
+      echo ""
+    fi
+    
+    # BOOKMARKS section
+    if [[ ${#BM[@]} -gt 0 ]]; then
+      for k in $(printf '%s\n' "${!BM[@]}" | sort); do
+        local desc="${BM_DESC[$k]:-${BM[$k]}}"
+        printf 'bm     %s — %s\n' "$k" "$desc"
+      done
+      echo ""
+    fi
+    
+    # Registry management
+    echo "EDIT   config — Edit configuration file shortcuts"
+    echo "EDIT   notes — Edit note file shortcuts"
+    echo "EDIT   run — Edit command shortcuts"
+    echo "EDIT   bookmarks — Edit bookmark shortcuts"
+  }
+}
+
+# Create sample files if they don't exist (only for testing)
+create_sample_files() {
+  # Don't create sample files - assume CSV files already exist
+  return 0
+}
+
+main() {
+  create_sample_files
+  load_all_registries
+  
+  local LAUNCHER choice verb key rest
+  LAUNCHER="$(pick_launcher)"
+  choice="$(menu | eval "$LAUNCHER")" || exit 0
+  choice="$(trim "$choice")"
+  [[ -z "$choice" ]] && exit 0
+
+  # Clean up menu decoration
+  choice="${choice%%—*}"
+  choice="${choice%% - *}"
+  choice="$(trim "$choice")"
+
+  # Parse command
+  read -r verb key rest <<<"$choice"
+  verb="$(trim "${verb:-}")"; key="$(trim "${key:-}")"
+
+  case "$verb" in
+    config)
+      if [[ -n "${CFG[$key]+x}" ]]; then
+        launch_editor "${CFG[$key]}"
+      else
+        echo "Config entry '$key' not found in registry"
+        exit 1
+      fi
+      ;;
+
+    note)
+      if [[ -n "${NOTE[$key]+x}" ]]; then
+        launch_editor "${NOTE[$key]}"
+      else
+        echo "Note entry '$key' not found in registry"
+        exit 1
+      fi
+      ;;
+
+    run)
+      if [[ -n "${RUN[$key]+x}" ]]; then
+        launch_cmd "${RUN[$key]}"
+      else
+        echo "Run command '$key' not found in registry"
+        exit 1
+      fi
+      ;;
+
+    bm)
+      if [[ -n "${BM[$key]+x}" ]]; then
+        open_browser "${BM[$key]}"
+      else
+        echo "Bookmark '$key' not found in registry"
+        exit 1
+      fi
+      ;;
+
+    EDIT)
+      case "$key" in
+        config)    launch_editor "$CONFIG_FILE" ;;
+        notes)     launch_editor "$NOTES_FILE" ;;
+        run)       launch_editor "$RUN_FILE" ;;
+        bookmarks) launch_editor "$BOOKMARKS_FILE" ;;
+        *)
+          echo "Usage: EDIT <config|notes|run|bookmarks>"
+          exit 1
+          ;;
+      esac
+      ;;
+
+    *)
+      echo "Unknown command: $choice"
+      echo "Available commands: config <key>, note <key>, run <key>, bm <key>, EDIT <type>"
+      exit 1
+      ;;
+  esac
+}
+
+# Allow command line usage: wofi-commands config foot
+if [[ $# -gt 0 ]]; then
+  # Handle version flag
+  if [[ "$1" == "--version" || "$1" == "-v" ]]; then
+    echo "wofi-commands v$VERSION"
+    exit 0
+  fi
+  
+  load_all_registries
+  verb="$1"
+  shift
+  key="${1:-}"
+  rest="${*:2}"
+  
+  case "$verb" in
+    config) 
+      if [[ -n "${CFG[$key]+x}" ]]; then
+        exec "$EDITOR" "${CFG[$key]}"
+      else
+        echo "Config entry '$key' not found in registry"
+        exit 1
+      fi
+      ;;
+    note) 
+      if [[ -n "${NOTE[$key]+x}" ]]; then
+        exec "$EDITOR" "${NOTE[$key]}"
+      else
+        echo "Note entry '$key' not found in registry"
+        exit 1
+      fi
+      ;;
+    run) 
+      if [[ -n "${RUN[$key]+x}" ]]; then
+        exec bash -c "${RUN[$key]}"
+      else
+        echo "Run command '$key' not found in registry"
+        exit 1
+      fi
+      ;;
+    bm) 
+      if [[ -n "${BM[$key]+x}" ]]; then
+        open_browser "${BM[$key]}"
+      else
+        echo "Bookmark '$key' not found in registry"
+        exit 1
+      fi
+      ;;
+    *) 
+      echo "Unknown command: $*"
+      echo "Available commands: config <key>, note <key>, run <key>, bm <key>"
+      exit 1
+      ;;
+  esac
+else
+  main
+fi

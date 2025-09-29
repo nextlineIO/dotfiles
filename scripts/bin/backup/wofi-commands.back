@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+# wofi command palette (registry.tsv-driven, lowercase verbs)
+# Verbs:
+#   config <key|/abs|~path>  -> open file in $EDITOR inside $TERMINAL
+#   note   <key|/abs|~path>  -> open file in $EDITOR inside $TERMINAL
+#   run    <key|command>     -> run command in $TERMINAL (login shell)
+#   bm     <key|url>         -> open bookmark in default browser
+#
+# Registry (TSV, tab-separated):  type<TAB>key<TAB>target
+# Location: ~/.config/wofi-commands/registry.tsv
+
+set -euo pipefail
+
+REGISTRY="${HOME}/.config/wofi-commands/registry.tsv"
+
+pick_terminal() {
+  if [[ -n "${TERMINAL:-}" ]] && command -v "$TERMINAL" >/dev/null 2>&1; then
+    printf '%s' "$TERMINAL"; return
+  fi
+  for t in foot kitty alacritty wezterm gnome-terminal konsole; do
+    command -v "$t" >/dev/null 2>&1 && { printf '%s' "$t"; return; }
+  done
+  command -v xdg-terminal-exec >/dev/null 2>&1 && { printf '%s' xdg-terminal-exec; return; }
+  echo "wofi-commands: No terminal found. Set \$TERMINAL or install foot/kitty/etc." >&2
+  exit 127
+}
+TERMINAL="$(pick_terminal)"
+EDITOR="${EDITOR:-nvim}"
+
+pick_launcher() {
+  command -v wofi  >/dev/null 2>&1 && { echo "wofi --dmenu -i -p ▶"; return; }
+  command -v fuzzel>/dev/null 2>&1 && { echo "fuzzel -d -p ▶";     return; }
+  command -v rofi  >/dev/null 2>&1 && { echo "rofi -dmenu -p ▶";   return; }
+  echo "wofi-commands: Need wofi/fuzzel/rofi installed." >&2
+  exit 127
+}
+
+open_browser() {
+  local url="$1"
+  command -v xdg-open >/dev/null 2>&1 && { nohup xdg-open "$url" >/dev/null 2>&1 & disown; return; }
+  command -v gio      >/dev/null 2>&1 && { nohup gio open "$url"  >/dev/null 2>&1 & disown; return; }
+  command -v x-www-browser >/dev/null 2>&1 && { nohup x-www-browser "$url" >/dev/null 2>&1 & disown; return; }
+  command -v sensible-browser >/dev/null 2>&1 && { nohup sensible-browser "$url" >/dev/null 2>&1 & disown; return; }
+  echo "wofi-commands: No browser opener found (xdg-open/gio/etc.)." >&2; exit 127
+}
+
+trim()  { local s="$*"; s="${s#"${s%%[![:space:]]*}"}"; s="${s%"${s##*[![:space:]]}"}"; printf '%s' "$s"; }
+
+# Robust ~ expansion: replace any leading ~ with $HOME
+expand_home() {
+  local p="$1"
+  if [[ "$p" == "~"* ]]; then p="${p/#\~/$HOME}"; fi
+  printf '%s' "$p"
+}
+
+# Run command string in a terminal (for `run`)
+run_in_terminal_cmd() {
+  local cmd="$*"
+  case "$TERMINAL" in
+    wezterm)           exec wezterm start -- bash -lc "$cmd" ;;
+    xdg-terminal-exec) exec xdg-terminal-exec bash -lc "$cmd" ;;
+    foot|kitty|alacritty|gnome-terminal|konsole)
+                       exec "$TERMINAL" -e bash -lc "$cmd" ;;
+    *)                 exec "$TERMINAL" -e bash -lc "$cmd" ;;
+  esac
+}
+
+# Run argv in a terminal (for editor+file; avoids shell quoting)
+run_in_terminal_argv() {
+  case "$TERMINAL" in
+    wezterm)           exec wezterm start -- "$@" ;;
+    xdg-terminal-exec) exec xdg-terminal-exec "$@" ;;
+    foot|kitty|alacritty|gnome-terminal|konsole)
+                       exec "$TERMINAL" -e "$@" ;;
+    *)                 exec "$TERMINAL" -e "$@" ;;
+  esac
+}
+
+launch_editor() {
+  local p; p="$(expand_home "$1")"
+  run_in_terminal_argv "$EDITOR" "$p"
+}
+launch_cmd() { run_in_terminal_cmd "$*"; }
+
+# registry
+declare -A CFG NOTE RUN BM
+load_registry() {
+  [[ -r "$REGISTRY" ]] || return 0
+  local t k v
+  while IFS=$'\t' read -r t k v || [[ -n "${t:-}" ]]; do
+    [[ -z "${t// /}" ]] && continue
+    [[ "${t:0:1}" == "#" ]] && continue
+    t="$(trim "$t")"; k="$(trim "$k")"; v="$(trim "$v")"
+    [[ -z "$t" || -z "$k" || -z "$v" ]] && continue
+    case "$t" in
+      config) CFG["$k"]="$v" ;;
+      note)   NOTE["$k"]="$v" ;;
+      run)    RUN["$k"]="$v" ;;
+      bm)     BM["$k"]="$v" ;;
+    esac
+  done < "$REGISTRY"
+}
+
+menu() {
+  for k in "${!CFG[@]}";  do printf 'config %s — %s\n' "$k" "${CFG[$k]}"; done
+  for k in "${!NOTE[@]}"; do printf 'note   %s — %s\n' "$k" "${NOTE[$k]}"; done
+  for k in "${!RUN[@]}";  do printf 'run    %s — %s\n' "$k" "${RUN[$k]}"; done
+  for k in "${!BM[@]}";   do printf 'bm     %s — %s\n' "$k" "${BM[$k]}"; done
+}
+
+main() {
+  load_registry
+  local LAUNCHER choice verb key rest
+  LAUNCHER="$(pick_launcher)"
+  choice="$(menu | eval "$LAUNCHER")" || exit 0
+  choice="$(trim "$choice")"
+  [[ -z "$choice" ]] && exit 0
+
+  # Drop menu decoration (anything after an em-dash or " - ")
+  choice="${choice%%—*}"
+  choice="${choice%% - *}"
+  choice="$(trim "$choice")"
+
+  # First token = verb, second = key/path; ignore the rest
+  read -r verb key rest <<<"$choice"
+  verb="$(trim "${verb:-}")"; key="$(trim "${key:-}")"
+
+  case "$verb" in
+    config)
+      [[ -n "${CFG[$key]+x}" ]] && { launch_editor "${CFG[$key]}"; exit 0; }
+      if [[ "$key" == /* || "$key" == "~"* ]]; then
+        launch_editor "$key"; exit 0
+      fi
+      launch_editor "~/$key"
+      ;;
+
+    note)
+      [[ -n "${NOTE[$key]+x}" ]] && { launch_editor "${NOTE[$key]}"; exit 0; }
+      if [[ "$key" == /* || "$key" == "~"* ]]; then
+        launch_editor "$key"; exit 0
+      fi
+      launch_editor "~/$key"
+      ;;
+
+    run)
+      [[ -n "${RUN[$key]+x}" ]] && { launch_cmd "${RUN[$key]}"; exit 0; }
+      [[ -n "$key" ]] && { launch_cmd "$key $rest"; exit 0; }
+      ;;
+
+    bm)
+      [[ -n "${BM[$key]+x}" ]] && { open_browser "${BM[$key]}"; exit 0; }
+      [[ "$key" =~ ^https?://.+ ]] && { open_browser "$key"; exit 0; }
+      [[ -n "$key" ]] && { open_browser "https://$key"; exit 0; }
+      ;;
+
+    *)
+      launch_cmd "$choice"
+      ;;
+  esac
+}
+
+main
+

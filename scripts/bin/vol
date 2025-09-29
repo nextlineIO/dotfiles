@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Usage: vol up|down|mute|toggle
+set -euo pipefail
+
+SINK="@DEFAULT_AUDIO_SINK@"
+STEP="5%"
+RID=9001
+SYNC_TAG="status-volume"
+
+case "${1:-}" in
+  up)    wpctl set-volume "$SINK" "$STEP+" ;;
+  down)  wpctl set-volume "$SINK" "$STEP-" ;;
+  mute|toggle) wpctl set-mute "$SINK" toggle ;;
+  *) echo "Usage: $0 {up|down|mute|toggle}"; exit 2 ;;
+esac
+
+OUT="$(wpctl get-volume "$SINK")"
+
+VOL=$(awk '{print $2}' <<<"$OUT")
+VOL_PCT=$(awk -v v="$VOL" 'BEGIN{printf "%d", v*100 + 0.5}')
+
+MUTED=0
+if grep -qi MUTED <<<"$OUT"; then
+  MUTED=1
+fi
+
+ICON="audio-volume-high"
+if [ "$MUTED" -eq 1 ]; then
+  ICON="audio-volume-muted"
+  VOL_PCT=0
+elif [ "$VOL_PCT" -lt 20 ]; then
+  ICON="audio-volume-low"
+elif [ "$VOL_PCT" -lt 60 ]; then
+  ICON="audio-volume-medium"
+fi
+
+notify-send -r "$RID" -t 1200 -i "$ICON" \
+  -h "int:value:${VOL_PCT}" \
+  -h "string:x-canonical-private-synchronous:${SYNC_TAG}" \
+  "Volume" "${VOL_PCT}%"
+

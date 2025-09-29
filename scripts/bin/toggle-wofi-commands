@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PATTERN='wofi --dmenu -i -p ▶'
+
+if pgrep -fa "$PATTERN" >/dev/null 2>&1; then
+  pkill -f "$PATTERN"
+else
+  /home/eric/bin/wofi-commands &
+fi
+

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Usage: mic toggle
+set -euo pipefail
+
+SRC="@DEFAULT_AUDIO_SOURCE@"    # default input device
+RID=9002
+SYNC_TAG="status-mic"
+
+# Toggle mute state
+wpctl set-mute "$SRC" toggle
+
+# Check current state
+OUT="$(wpctl get-volume "$SRC")"
+MUTED=0
+if grep -qi MUTED <<<"$OUT"; then
+  MUTED=1
+fi
+
+ICON="microphone-sensitivity-high"
+TITLE="Microphone"
+BODY="On"
+
+if [ "$MUTED" -eq 1 ]; then
+  ICON="microphone-sensitivity-muted"
+  BODY="Muted"
+fi
+
+notify-send -r "$RID" -t 1200 -i "$ICON" \
+  -h "string:x-canonical-private-synchronous:${SYNC_TAG}" \
+  "$TITLE" "$BODY"
+

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Toggle wofi: if running, close it; otherwise launch it.
+
+if pgrep -x wofi >/dev/null; then
+  # Graceful shutdown (TERM); falls back to kill if needed.
+  pkill -x -TERM rofi || pkill -x wofi
+else
+  # Launch whatever mode you like (drun shown here).
+  exec wofi --show drun
+fi
+

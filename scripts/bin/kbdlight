@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Usage: kbdlight up|down
+set -euo pipefail
+
+DEV="tpacpi::kbd_backlight"
+RID=9004
+SYNC_TAG="status-kbd"
+
+case "${1:-}" in
+  up)   brightnessctl -d "$DEV" set +33% ;;
+  down) brightnessctl -d "$DEV" set 33%- ;;
+  *) echo "Usage: $0 {up|down}"; exit 2 ;;
+esac
+
+CUR=$(brightnessctl -d "$DEV" g)
+MAX=$(brightnessctl -d "$DEV" m)
+PCT=$(( (CUR*100 + MAX/2) / MAX ))
+
+notify-send -r "$RID" -t 1200 -i "keyboard" \
+  -h "int:value:${PCT}" \
+  -h "string:x-canonical-private-synchronous:${SYNC_TAG}" \
+  "Keyboard Backlight" "${PCT}%"
+
