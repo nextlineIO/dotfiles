@@ -1,0 +1,36 @@
+/* Minimal, readable swaync theme */
+
+* { font: 12pt "Inter", "Noto Sans", sans-serif; }
+
+/* Container spacing */
+.notification-row { margin: 8px; }
+
+/* Toast box */
+.notification {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid #5b5bd6;
+  background: #1e1e2e;
+  color: #eaeaee;
+}
+
+/* Title bold, message normal */
+.notification .title { font-weight: 700; margin-bottom: 2px; }
+.notification .body  { opacity: 0.95; }
+
+/* Progress bar (used by int:value) */
+.progress {
+  min-height: 6px;
+  border-radius: 4px;
+}
+
+/* Control Center basics */
+.control-center {
+  background: rgba(20,20,30,0.9);
+  border-radius: 12px;
+  padding: 8px;
+}
+
+.widget-title { font-weight: 700; padding: 6px 10px; }
+.widget-dnd   { padding: 6px 10px; }
+.widget-notifications { padding: 6px 6px; }

@@ -1,0 +1,23 @@
+{
+  "position": "top-right",
+  "layer": "overlay",
+  "timeout": 1500,
+  "timeout-low": 1500,
+  "timeout-critical": 0,
+  "keyboard-shortcuts": true,
+  "transition-time": 150,
+  "max-visible": 5,
+  "ignore-timeout": false,
+  "widgets": [
+    "inhibitors",
+    "title",
+    "dnd",
+    "widget-notifications"
+  ],
+  "widget-config": {
+    "widget-notifications": {
+      "max-notifications": 50
+    }
+  }
+}
+

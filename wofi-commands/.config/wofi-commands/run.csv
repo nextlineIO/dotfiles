@@ -1,0 +1,5 @@
+# key,target,description
+updates,sudo pacman -Syu,Update all system packages
+htop,htop,Interactive process viewer
+powerstat,sudo powertop,Monitor system power consumption
+bt,/home/eric/bin/bt-wofi,Bluetooth Mgr

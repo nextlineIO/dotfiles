@@ -1,0 +1,17 @@
+# Only interactive
+[[ $- == *i* ]] || return
+
+# 24-bit color helpers (wrapped for readline)
+__c() { printf '\[\e[38;2;%s;%s;%sm\]' "$1" "$2" "$3"; }
+__r='\[\e[0m\]'
+
+# Tokyo-leaning colors
+c_user="$(__c 0 234 255)"      # #00EAFF (cyan-ish)
+c_host="$(__c 255 42 109)"     # #FF2A6D (magenta-ish)
+
+# Minimal prompt: user@host ➜
+#PS1="${c_user}\u${__r}@${c_host}\h${__r} ➜ "
+#PS1="${CHOST}\h${__r}:${CPATH}\W${__r} $(__sym) "
+PS1="${CUSER}\u${__r}@${CHOST}\h${__r} ${CPATH}\w${__r} $ "
+
+

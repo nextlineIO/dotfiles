@@ -1,0 +1,9 @@
+# key,target,description
+hyprconfig,~/.config/hypr/hyprland.conf,Hyprland window manager configuration
+waybar,~/.config/waybar/config.jsonc,Waybar Configuration
+foot,~/.config/foot/foot.ini,Foot Terminal Settings
+bashrc,~/.bashrc,Bash Shell Configuration
+wofi,~/.config/wofi/config,Wofi Launcher Settings
+nvim,~/.config/nvim/,nvim settings
+bt-wofi,~/bin/bt-wofi,wofi Bluetooth Control
+hypr-toggle-layout,~/bin/hypr-toggle-layout.sh,Script that lips betweenn master and dwindle layouts (hypr)
