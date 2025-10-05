@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# Toggle floating foot window running btop
-
+# Toggle floating alacritty window running btop
 if pgrep -x btop >/dev/null; then
   pkill -x btop
 else
-  foot --app-id btop btop &
+  alacritty --class btop -e btop &
 fi
-

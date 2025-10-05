@@ -23,7 +23,7 @@ alias ls='ls --color=auto --group-directories-first -F'
 alias ll='ls -lah --color=auto --group-directories-first'
 alias la='ls -A --color=auto --group-directories-first'
 alias l='ls -CF --color=auto --group-directories-first'
-
+alias update-servers='cd ~/Ansible/ && ansible-playbook -i inventory.yml update_servers.yml --ask-vault-pass'
 # If you prefer eza (exa successor), swap these in instead:
 # if command -v eza >/dev/null 2>&1; then
 #   alias ls='eza --group-directories-first --icons --color=auto'
@@ -80,6 +80,8 @@ alias psu='ps -eF | awk '"'"'{print $1,$2,$11}'"'"' | column -t'
 
 alias wmenu='wofi --show drun'
 alias footcfg='foot --config ~/.config/foot/foot.ini'
+
+
 
 # End of aliases
 

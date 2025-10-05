@@ -81,8 +81,6 @@ button:hover {
 }
 
 #memory {
-  font-family: "JetBrainsMono Nerd Font", "Symbols Nerd Font", "Symbols Nerd Font Mono", monospace;
-  padding: 0 8px;
     color: @mag;
     border-bottom: 4px solid @mag;
 }

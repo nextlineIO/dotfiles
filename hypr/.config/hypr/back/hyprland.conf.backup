@@ -3,17 +3,7 @@
 ################
 
 # See https://wiki.hypr.land/Configuring/Monitors/
-
-# Laptop left
-monitor = eDP-1, 1920x1200@60, 0x0, 1.0
-
-# XDR right - explicitly set bitdepth for better rendering
-monitor = DP-1, 6016x3384@60, 1920x0, 2.0, bitdepth, 10
-
-# Kill the stray tiled head the XDR exposes
-monitor = DP-2, disable
-
-
+monitor=,1920x1200,auto,1
 
 ###################
 ### MY PROGRAMS ###
@@ -22,11 +12,11 @@ monitor = DP-2, disable
 # See https://wiki.hypr.land/Configuring/Keywords/
 
 # Set programs that you use
-$terminal = alacritty
+$terminal = footclient
 $fileManager = dolphin
 $menu = wofi --show drun
 $reload_waybar = pkill waybar; waybar &
-$browser = env MOZ_ENABLE_WAYLAND=1 zen-browser
+$browser = zen-browser
 $editor = nvim
 
 #################
@@ -37,7 +27,7 @@ exec-once = waybar
 exec-once = hyprpaper
 exec-once = swaync
 exec-once = hypridle
-exec-once = nm-applet --indicator
+exec-once = foot --server
 
 #############################
 ### ENVIRONMENT VARIABLES ###
@@ -50,10 +40,6 @@ env = HYPRCURSOR_SIZE,24
 env = PATH,/home/eric/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
 env = TERMINAL,$terminal
 env = EDITOR,$editor
-
-# Intel graphics optimizations for high-res displays
-env = WLR_DRM_NO_ATOMIC,1
-env = WLR_RENDERER_ALLOW_SOFTWARE,0
 
 ###################
 ### PERMISSIONS ###
@@ -172,8 +158,6 @@ dwindle {
 misc {
     force_default_wallpaper = 0 # Set to 0 or 1 to disable the anime mascot wallpapers
     disable_hyprland_logo = false # If true disables the random hyprland logo / anime girl background. :(
-    vfr = true              # Variable frame rate - helps with performance on high-res displays
-    vrr = 0                 # Disable VRR to prevent flickering
 }
 
 #############
@@ -223,18 +207,18 @@ device {
 # See https://wiki.hypr.land/Configuring/Keywords/
 $mainMod = SUPER # Sets "Windows" key as main modifier
 
-# ── Core Applications ─────────────────────────────────
+# ── Core Applications ───────────────────────────────────────
 bind = $mainMod, RETURN, exec, $terminal
 bind = $mainMod, E, exec, $fileManager
 bind = $mainMod, B, exec, $browser
 
-# ── Launchers ─────────────────────────────────────────
+# ── Launchers ───────────────────────────────────────────────
 bind = $mainMod, D, exec, wofi --show drun
 bind = $mainMod SHIFT, D, exec, /home/eric/bin/toggle-wofi-commands
 # WiFi Manager
 bind = $mainMod, W, exec, /home/eric/bin/wifi-wofi
 
-# ── Window Management ─────────────────────────────────
+# ── Window Management ───────────────────────────────────────
 bind = $mainMod SHIFT, Q, killactive
 bind = $mainMod, V, togglefloating
 bind = $mainMod, F11, fullscreen, 1
@@ -246,22 +230,22 @@ bind = $mainMod CTRL, SPACE, exec, hyprctl keyword general:layout master
 bind = $mainMod, backspace, layoutmsg, togglesplit
 bind = $mainMod, M, layoutmsg, swapwithmaster
 
-# ── System & Session ──────────────────────────────────
+# ── System & Session ────────────────────────────────────────
 bind = $mainMod, R, exec, $reload_waybar
 bind = $mainMod SHIFT, R, exec, hyprctl reload
 bind = $mainMod, DELETE, exec, hyprlock
 bind = $mainMod CTRL SHIFT, ESCAPE, exit
 
-# ── Window Info ───────────────────────────────────────
-bind = $mainMod, I, exec, sh -lc 'w=$(hyprctl activewindow -j | jq -r "\"\\(.class) – \\(.title)\\nWS: \\(.workspace.id)  PID: \\(.pid)\""); notify-send "Active Window" "$w"'
+# ── Window Info ─────────────────────────────────────────────
+bind = $mainMod, I, exec, sh -lc 'w=$(hyprctl activewindow -j | jq -r "\"\\(.class) — \\(.title)\\nWS: \\(.workspace.id)  PID: \\(.pid)\""); notify-send "Active Window" "$w"'
 
-# ── Focus (HJKL) ──────────────────────────────────────
+# ── Focus (HJKL) ────────────────────────────────────────────
 bind = $mainMod, h, movefocus, l
 bind = $mainMod, j, movefocus, d
 bind = $mainMod, k, movefocus, u
 bind = $mainMod, l, movefocus, r
 
-# ── Move Window (HJKL + Arrows) ───────────────────────
+# ── Move Window (HJKL + Arrows) ─────────────────────────────
 bind = $mainMod SHIFT, h, movewindow, l
 bind = $mainMod SHIFT, j, movewindow, d
 bind = $mainMod SHIFT, k, movewindow, u
@@ -271,7 +255,7 @@ bind = $mainMod SHIFT, down,  movewindow, d
 bind = $mainMod SHIFT, up,    movewindow, u
 bind = $mainMod SHIFT, right, movewindow, r
 
-# ── Resize (HJKL = 30px; Arrows = 10px) ───────────────
+# ── Resize (HJKL = 30px; Arrows = 10px) ─────────────────────
 bind = $mainMod CTRL, h, resizeactive, -30 0
 bind = $mainMod CTRL, l, resizeactive,  30 0
 bind = $mainMod CTRL, k, resizeactive,   0 -30
@@ -281,25 +265,25 @@ bind = $mainMod CTRL, right, resizeactive,  10 0
 bind = $mainMod CTRL, up,    resizeactive,   0 -10
 bind = $mainMod CTRL, down,  resizeactive,   0  10
 
-# ── Alt-Tab (Last Window) ─────────────────────────────
+# ── Alt-Tab (Last Window) ───────────────────────────────────
 bind = $mainMod, TAB, focuscurrentorlast
 
-# ── Monitor Navigation ────────────────────────────────
+# ── Monitor Navigation ──────────────────────────────────────
 bind = $mainMod, comma,  focusmonitor, -1
 bind = $mainMod, period, focusmonitor, +1
 bind = $mainMod SHIFT, comma,  movewindow, mon:-1
 bind = $mainMod SHIFT, period, movewindow, mon:+1
 
-# ── Move Workspace Between Monitors ───────────────────
+# ── Move Workspace Between Monitors ─────────────────────────
 bind = $mainMod ALT, comma,  movecurrentworkspacetomonitor, -1
 bind = $mainMod ALT, period, movecurrentworkspacetomonitor, +1
 
-# ── Special Workspace (Scratchpad) ────────────────────
+# ── Special Workspace (Scratchpad) ──────────────────────────
 bind = $mainMod, grave, togglespecialworkspace
 bind = $mainMod SHIFT, grave, movetoworkspace, special
 bind = $mainMod CTRL, grave, exec, hyprctl dispatch togglespecialworkspace; $terminal
 
-# ── Switch Workspaces (1-10) ──────────────────────────
+# ── Switch Workspaces (1-10) ────────────────────────────────
 bind = $mainMod, 1, workspace, 1
 bind = $mainMod, 2, workspace, 2
 bind = $mainMod, 3, workspace, 3
@@ -311,7 +295,7 @@ bind = $mainMod, 8, workspace, 8
 bind = $mainMod, 9, workspace, 9
 bind = $mainMod, 0, workspace, 10
 
-# ── Move Window to Workspace (1-10) ───────────────────
+# ── Move Window to Workspace (1-10) ─────────────────────────
 bind = $mainMod SHIFT, 1, movetoworkspace, 1
 bind = $mainMod SHIFT, 2, movetoworkspace, 2
 bind = $mainMod SHIFT, 3, movetoworkspace, 3
@@ -323,11 +307,11 @@ bind = $mainMod SHIFT, 8, movetoworkspace, 8
 bind = $mainMod SHIFT, 9, movetoworkspace, 9
 bind = $mainMod SHIFT, 0, movetoworkspace, 10
 
-# ── Scroll Through Workspaces ─────────────────────────
+# ── Scroll Through Workspaces ───────────────────────────────
 bind = $mainMod, mouse_down, workspace, e+1
 bind = $mainMod, mouse_up, workspace, e-1
 
-# ── Mouse Window Actions ──────────────────────────────
+# ── Mouse Window Actions ────────────────────────────────────
 bindm = $mainMod, mouse:272, movewindow
 bindm = $mainMod, mouse:273, resizewindow
 
@@ -335,29 +319,29 @@ bindm = $mainMod, mouse:273, resizewindow
 # Lenovo / Fn Keybinds  #
 #########################
 
-# ── Audio Output (speakers) ───────────────────────────
+# ── Audio Output (speakers) ─────────────────────────────────
 # Uses ~/bin/vol which handles wpctl sink volume + mute
 bind = , XF86AudioMute,        exec, vol mute
 bind = , XF86AudioLowerVolume, exec, vol down
 bind = , XF86AudioRaiseVolume, exec, vol up
 
-# ── Microphone (input) ────────────────────────────────
+# ── Microphone (input) ──────────────────────────────────────
 # Uses ~/bin/mic which toggles source mute
 bind = , XF86AudioMicMute,     exec, mic toggle
 
-# ── Screen Brightness ─────────────────────────────────
+# ── Screen Brightness ───────────────────────────────────────
 bind = , XF86MonBrightnessDown, exec, bright down
 bind = , XF86MonBrightnessUp,   exec, bright up
 
-# ── Keyboard Backlight (ThinkPad) ─────────────────────
+# ── Keyboard Backlight (ThinkPad) ───────────────────────────
 bind = , XF86KbdBrightnessDown, exec, kbdlight down
 bind = , XF86KbdBrightnessUp,   exec, kbdlight up
 
-# ── Radios (robust toggles) ───────────────────────────
+# ── Radios (robust toggles) ─────────────────────────────────
 bind = , XF86WLAN,      exec, rfkill toggle wifi
 bind = , XF86Bluetooth, exec, rfkill toggle bluetooth
 
-# ── Print Screen (Options) ────────────────────────────
+# ── Print Screen (Options) ──────────────────────────────────
 # Print = full screen
 bind = , Print, exec, printscn screen
 # Shift+Print = active window
@@ -365,10 +349,10 @@ bind = SHIFT, Print, exec, printscn window
 # Selective screenshot key = region
 bind = , XF86SelectiveScreenshot, exec, printscn region
 
-# ── Display tools ─────────────────────────────────────
+# ── Display tools ───────────────────────────────────────────
 bind = , XF86Display, exec, wdisplays
 
-# ── Favorites / Utilities ─────────────────────────────
+# ── Favorites / Utilities ───────────────────────────────────
 bind = , XF86Tools,     exec, gnome-control-center
 bind = , XF86Favorites, exec, toggle-btop
 bind = SHIFT, XF86Favorites, exec, toggle-missioncenter
@@ -386,29 +370,19 @@ windowrule = suppressevent maximize, class:.*
 # Fix some dragging issues with XWayland
 windowrule = nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0
 
-# ── Foot Terminal Optimizations (fixes XDR rendering) ─
-# Disable blur and shadows for foot to prevent flickering on high-res displays
-windowrulev2 = noblur, class:^(foot)$
-windowrulev2 = noshadow, class:^(foot)$
-
-# ── Alacritty Terminal Optimizations ──────────────────
-# Disable blur and shadows for alacritty for best performance on XDR
-windowrulev2 = noblur, class:^(Alacritty)$
-windowrulev2 = noshadow, class:^(Alacritty)$
-
-# ── B-Top ─────────────────────────────────────────────
+# ── B-Top ───────────────────────────────────────────────────
 # Foot launched as: foot --app-id btop btop
 # Match the Hyprland class "btop" and force floating overlay behavior.
 windowrulev2 = float, class:^(btop)$
 windowrulev2 = center, class:^(btop)$
 windowrulev2 = size 1200 800, class:^(btop)$
 
-# ── Mission Center ────────────────────────────────────
+# ── Mission Center ──────────────────────────────────────────
 windowrulev2 = float, class:^(missioncenter)$
 windowrulev2 = center, class:^(missioncenter)$
 windowrulev2 = size 1400 900, class:^(missioncenter)$
 
-# ── Float & center common utilities/dialogs ──────────
+# --- Float & center common utilities/dialogs (added) ---
 windowrulev2 = float,  class:^(pavucontrol|blueman-manager|nm-connection-editor)$
 windowrulev2 = float,  class:^(org.gnome.Calculator|Lxappearance|qt5ct|qt6ct)$
 windowrulev2 = float,  title:^(Open File|Save File|File Upload|Preferences|Settings)$
