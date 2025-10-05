@@ -1,1 +1,2 @@
-export TERMINAL=footclient
+export TERMINAL=alacritty
+
