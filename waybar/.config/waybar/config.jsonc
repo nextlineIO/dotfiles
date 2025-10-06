@@ -28,7 +28,7 @@
         "custom/sep",
         "clock",
         "custom/sep",
-//        "tray",
+        "tray",
         "idle_inhibitor"
         //"custom/sep"
     ],
@@ -99,9 +99,9 @@
         "tooltip-format-wifi": "{essid} ({signalStrength}%)\n󰩟 {ipaddr}/{cidr}\n󰇚 {frequency} MHz\n󰞒 ↓ {bandwidthDownBytes} ↑ {bandwidthUpBytes}",
         "tooltip-format-ethernet": "Wired Connection\n󰩟 {ipaddr}/{cidr}\n󰞒 ↓ {bandwidthDownBytes} ↑ {bandwidthUpBytes}",
         "tooltip-format-disconnected": "Network Disconnected",
-        "on-click": "nm-connection-editor",
-        "on-click-right": "/home/eric/bin/wifi-manager",
-        "on-click-middle": "footclient -e nmtui",
+        //"on-click": "nm-connection-editor",
+        //"on-click-right": "/home/eric/bin/wifi-manager",
+        //"on-click-middle": "$TERMINAL -e nmtui",
         "max-length": 50
     },
     "custom/sep": {
