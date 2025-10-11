@@ -23,20 +23,15 @@ alias ls='ls --color=auto --group-directories-first -F'
 alias ll='ls -lah --color=auto --group-directories-first'
 alias la='ls -A --color=auto --group-directories-first'
 alias l='ls -CF --color=auto --group-directories-first'
-alias update-servers='cd ~/Ansible/ && ansible-playbook -i inventory.yml update_servers.yml --ask-vault-pass'
-# If you prefer eza (exa successor), swap these in instead:
-# if command -v eza >/dev/null 2>&1; then
-#   alias ls='eza --group-directories-first --icons --color=auto'
-#   alias ll='eza -lah --group-directories-first --icons --color=auto'
-#   alias la='eza -la --group-directories-first --icons --color=auto'
-#   alias l='eza -1 --group-directories-first --icons --color=auto'
-# fi
+
+
 
 # --- grep family -----------------------------------------------------------
 
 alias grep='grep --color=auto'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
+
 
 # --- navigation ------------------------------------------------------------
 
@@ -50,6 +45,7 @@ alias -- -='cd -'
 
 alias v='nvim'
 alias e='$EDITOR'
+alias vim='$EDITOR'
 
 # --- safety / quality of life ---------------------------------------------
 
@@ -81,7 +77,9 @@ alias psu='ps -eF | awk '"'"'{print $1,$2,$11}'"'"' | column -t'
 alias wmenu='wofi --show drun'
 alias footcfg='foot --config ~/.config/foot/foot.ini'
 
+alias update-servers='cd ~/Ansible/ && ansible-playbook -i inventory.yml update_servers.yml --ask-vault-pass'
 
+alias cat='bat'
 
 # End of aliases
 
