@@ -12,9 +12,6 @@ return {
                 style = 'dark'
             }
             require('onedark').load()
-            vim.cmd('hi Directory guibg=NONE')
-            vim.cmd('hi SignColumn guibg=NONE')
-            enable_transparency()
         end
     },
     -- {

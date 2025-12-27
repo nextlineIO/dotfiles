@@ -24,7 +24,7 @@ set.signcolumn = "yes"
 set.cursorline = true
 
 -- Color Column size
-set.colorcolumn = "100"
+set.colorcolumn =
 
 -- clipboard
 set.clipboard:append("unnamedplus")
