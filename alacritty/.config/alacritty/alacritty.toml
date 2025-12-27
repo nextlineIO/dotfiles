@@ -1,5 +1,5 @@
 # Alacritty Configuration
-# Optimized for XDR Display with Tokyo Night theme
+# Optimized for XDR Display with OneDark theme
 
 [window]
 # Padding around the terminal content
@@ -33,35 +33,35 @@ size = 16.0
 builtin_box_drawing = true
 
 [colors]
-# Tokyo Night color scheme
+# OneDark color scheme
 
 [colors.primary]
-background = "#1a1b26"
-foreground = "#c0caf5"
+background = "#282c34"
+foreground = "#abb2bf"
 
 [colors.normal]
-black   = "#15161E"
-red     = "#f7768e"
-green   = "#9ece6a"
-yellow  = "#e0af68"
-blue    = "#7aa2f7"
-magenta = "#bb9af7"
-cyan    = "#7dcfff"
-white   = "#a9b1d6"
+black   = "#2c323c"
+red     = "#e06c75"
+green   = "#98c379"
+yellow  = "#e5c07b"
+blue    = "#61afef"
+magenta = "#c678dd"
+cyan    = "#56b6c2"
+white   = "#5c6370"
 
 [colors.bright]
-black   = "#414868"
-red     = "#f7768e"
-green   = "#9ece6a"
-yellow  = "#e0af68"
-blue    = "#7aa2f7"
-magenta = "#bb9af7"
-cyan    = "#7dcfff"
-white   = "#c0caf5"
+black   = "#3e4452"
+red     = "#e06c75"
+green   = "#98c379"
+yellow  = "#e5c07b"
+blue    = "#61afef"
+magenta = "#c678dd"
+cyan    = "#56b6c2"
+white   = "#abb2bf"
 
 [colors.dim]
-black   = "#ff9e64"
-red     = "#db4b4b"
+black   = "#1e2127"
+red     = "#e06c75"
 
 [scrolling]
 # Scrollback buffer

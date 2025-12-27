@@ -1,14 +1,14 @@
-@define-color bg    #1a1b26; 
-@define-color fg    #a9b1d6; 
-@define-color blk   #32344a; 
-@define-color red   #f7768e; 
-@define-color grn   #9ece6a; 
-@define-color ylw   #e0af68; 
-@define-color blu   #7aa2f7; 
-@define-color mag   #ad8ee6; 
-@define-color cyn   #0db9d7; 
-@define-color brblk #444b6a; 
-@define-color white #ffffff; 
+@define-color bg    #282c34;
+@define-color fg    #abb2bf;
+@define-color blk   #2c323c;
+@define-color red   #e06c75;
+@define-color grn   #98c379;
+@define-color ylw   #e5c07b;
+@define-color blu   #61afef;
+@define-color mag   #c678dd;
+@define-color cyn   #56b6c2;
+@define-color brblk #3e4452;
+@define-color white #abb2bf; 
 
 * {
     font-family: "JetBrainsMono Nerd Font", monospace;
@@ -112,5 +112,5 @@ button:hover {
 }
 
 #tray {
-    background-color: #2980b9;
+    background-color: #3e4452;
 }

@@ -6,19 +6,21 @@ end
 
 return {
     {
-        "folke/tokyonight.nvim",
+        "navarasu/onedark.nvim",
         config = function()
-            vim.cmd.colorscheme "tokyonight"
+            require('onedark').setup {
+                style = 'dark'
+            }
+            require('onedark').load()
             vim.cmd('hi Directory guibg=NONE')
             vim.cmd('hi SignColumn guibg=NONE')
             enable_transparency()
         end
     },
     -- {
-    --     "Mofiqul/vscode.nvim",
-    --     name = 'vscode',
+    --     "folke/tokyonight.nvim",
     --     config = function()
-    --         vim.cmd.colorscheme "vscode"
+    --         vim.cmd.colorscheme "tokyonight"
     --         vim.cmd('hi Directory guibg=NONE')
     --         vim.cmd('hi SignColumn guibg=NONE')
     --         enable_transparency()
