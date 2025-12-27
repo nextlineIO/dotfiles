@@ -81,5 +81,9 @@ alias update-servers='cd ~/Ansible/ && ansible-playbook -i inventory.yml update_
 
 alias cat='bat'
 
+#Launch Claude in the AI Directory 
+alias ai='cd ~/ai && claude'
+
+
 # End of aliases
 

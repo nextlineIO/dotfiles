@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Usage: xdr up|down|max|min
+# Controls Apple Pro Display XDR brightness via asdcontrol
+set -euo pipefail
+
+HIDDEV="/dev/usb/hiddev2"
+CTL="$HOME/bin/xdr-bright-ctl"
+
+STEP_DEFAULT=5               # % per tap
+STEP_DIM=2                   # finer step when very dim
+DIM_THRESHOLD=20             # below this %, use STEP_DIM
+
+RID=9004
+SYNC_TAG="status-xdr-brightness"
+TIMEOUT_MS=1200
+
+# Check dependencies
+[[ -x "$CTL" ]] || { echo "xdr-bright-ctl not found at $CTL"; exit 1; }
+command -v notify-send >/dev/null || { echo "notify-send not found"; exit 1; }
+
+# Check if XDR is connected
+if [[ ! -c "$HIDDEV" ]]; then
+  notify-send -r "$RID" -t "$TIMEOUT_MS" -i "dialog-warning" \
+    "XDR Display" "Not connected"
+  exit 1
+fi
+
+# Read current brightness (silence the banner)
+CUR=$("$CTL" -s -b "$HIDDEV" 2>/dev/null) || {
+  echo "Failed to read XDR brightness"
+  exit 1
+}
+
+# XDR range: 400-60000
+MIN_VAL=400
+MAX_VAL=60000
+SPAN=$((MAX_VAL - MIN_VAL))
+
+# Convert to percentage
+PCT_BEFORE=$(( (CUR - MIN_VAL) * 100 / SPAN ))
+(( PCT_BEFORE < 0 )) && PCT_BEFORE=0
+(( PCT_BEFORE > 100 )) && PCT_BEFORE=100
+
+# Decide step size
+STEP=$STEP_DEFAULT
+(( PCT_BEFORE < DIM_THRESHOLD )) && STEP=$STEP_DIM
+
+# Apply change
+case "${1:-}" in
+  up)   "$CTL" -s -b "$HIDDEV" "+${STEP}%" >/dev/null 2>&1 ;;
+  down) "$CTL" -s -b "$HIDDEV" -- "-${STEP}%" >/dev/null 2>&1 ;;
+  max)  "$CTL" -s -b "$HIDDEV" 100% >/dev/null 2>&1 ;;
+  min)  "$CTL" -s -b "$HIDDEV" 0% >/dev/null 2>&1 ;;
+  *)    echo "Usage: $0 {up|down|max|min}"; exit 2 ;;
+esac
+
+# Re-read brightness
+CUR=$("$CTL" -s -b "$HIDDEV" 2>/dev/null)
+PCT=$(( (CUR - MIN_VAL) * 100 / SPAN ))
+(( PCT < 0 )) && PCT=0
+(( PCT > 100 )) && PCT=100
+
+# Icon selection
+pick_icon() {
+  local p="$1"
+  if   (( p < 34 )); then echo "display-brightness-low-symbolic"
+  elif (( p < 67 )); then echo "display-brightness-medium-symbolic"
+  else                    echo "display-brightness-high-symbolic"
+  fi
+}
+
+ICON="$(pick_icon "$PCT")"
+
+notify-send -r "$RID" -t "$TIMEOUT_MS" -i "$ICON" \
+  -h "int:value:${PCT}" \
+  -h "string:x-canonical-private-synchronous:${SYNC_TAG}" \
+  "XDR Brightness" "${PCT}%"
